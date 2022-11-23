@@ -1,0 +1,18 @@
+apiVersion: kfdef.apps.kubeflow.org/v1
+kind: KfDef
+metadata:
+  name: rhods-pipelines
+spec:
+  applications:
+    - kustomizeConfig:
+        overlays:
+          - metadata-store-mariadb
+          - integration-odhdashboard
+          - ds-pipeline-ui
+        repoRef:
+          name: manifests
+          path: data-science-pipelines
+      name: data-science-pipelines
+  repos:
+    - name: manifests
+      uri: "https://github.com/red-hat-data-services/odh-manifests/tarball/master"

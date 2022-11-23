@@ -104,6 +104,7 @@ function oc::object::safe::to::apply() {
 ODH_PROJECT=${ODH_CR_NAMESPACE:-"redhat-ods-applications"}
 ODH_MONITORING_PROJECT=${ODH_MONITORING_NAMESPACE:-"redhat-ods-monitoring"}
 ODH_NOTEBOOK_PROJECT=${ODH_NOTEBOOK_NAMESPACE:-"rhods-notebooks"}
+ODH_PIPELINES_PROJECT=${ODH_PIPELINES_NAMESPACE:-"rhods-pipelines"}
 ODH_OPERATOR_PROJECT=${OPERATOR_NAMESPACE:-"redhat-ods-operator"}
 NAMESPACE_LABEL="opendatahub.io/generated-namespace=true"
 
@@ -112,6 +113,9 @@ oc label namespace $ODH_PROJECT  $NAMESPACE_LABEL --overwrite=true || echo "INFO
 
 oc new-project ${ODH_NOTEBOOK_PROJECT} || echo "INFO: ${ODH_NOTEBOOK_PROJECT} project already exists."
 oc label namespace $ODH_NOTEBOOK_PROJECT  $NAMESPACE_LABEL --overwrite=true || echo "INFO: ${NAMESPACE_LABEL} label already exists."
+
+oc new-project ${ODH_PIPELINES_PROJECT} || echo "INFO: ${ODH_PIPELINES_PROJECT} project already exists."
+oc label namespace $ODH_PIPELINES_PROJECT  $NAMESPACE_LABEL --overwrite=true || echo "INFO: ${NAMESPACE_LABEL} label already exists."
 
 oc new-project $ODH_MONITORING_PROJECT || echo "INFO: $ODH_MONITORING_PROJECT project already exists."
 oc label namespace $ODH_MONITORING_PROJECT openshift.io/cluster-monitoring=true --overwrite=true
@@ -162,6 +166,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Create KfDef for RHODS Pipelines 
+oc apply -n ${ODH_PIPELINES_PROJECT} -f rhods-pipelines.yaml
+if [ $? -ne 0 ]; then
+  echo "ERROR: Attempt to create the RHODS Pipelines KfDef failed."
+  exit 1
+fi
+
+
 # Create KfDef for RHODS monitoring stack
 oc apply -n ${ODH_MONITORING_PROJECT} -f rhods-monitoring.yaml
 if [ $? -ne 0 ]; then
@@ -195,7 +207,7 @@ if [ "$RHODS_SELF_MANAGED" -eq 0 ]; then
   echo "INFO: Applying specific configuration for OSD environments."
 
   # Give dedicated-admins group CRUD access to ConfigMaps, Secrets, ImageStreams, Builds and BuildConfigs in select namespaces
-  for target_project in ${ODH_PROJECT} ${ODH_NOTEBOOK_PROJECT}; do
+  for target_project in ${ODH_PROJECT} ${ODH_NOTEBOOK_PROJECT} ${ODH_PIPELINES_PROJECT}; do
     oc apply -n $target_project -f rhods-osd-configs.yaml
     if [ $? -ne 0 ]; then
       echo "ERROR: Attempt to create the RBAC policy for dedicated admins group in $target_project failed."
